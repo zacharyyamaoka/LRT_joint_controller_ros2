@@ -18,7 +18,7 @@ from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, RegisterEventHandler
+from launch.actions import DeclareLaunchArgument, RegisterEventHandler, LogInfo
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit, OnProcessStart
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
@@ -30,6 +30,7 @@ from launch_ros.parameter_descriptions import ParameterValue
 
 from launch_ros.actions import Node
 
+# ros2 launch joint_controller single_joint_test.launch.py
 
 def generate_launch_description():
 
@@ -96,7 +97,7 @@ def generate_launch_description():
         [
             FindPackageShare(package_name),
             "worlds",
-            'empty.world'
+            'empty.sdf'
         ]
     )
 
@@ -136,11 +137,12 @@ def generate_launch_description():
     gazebo_sim_bridge = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
             get_package_share_directory('ros_gz_sim'), 'launch'), '/gz_sim.launch.py']),
-            launch_arguments={'gz_args': ['-r -v -v4 ', world], 'on_exit_shutdown': 'true'}.items()
+            launch_arguments={'gz_args': ['-r -v4 ', world], 'on_exit_shutdown': 'true'}.items()
         )
     
     nodes = [
         gazebo_sim_bridge,
+        LogInfo(msg=["Using world file: ", world]),
 
         RegisterEventHandler(
             event_handler=OnProcessExit(

@@ -22,7 +22,7 @@
 
     <ros2_control name="multiple_joints_test" type="system">
         <hardware>  
-            <plugin>ign_ros2_control/IgnitionSystem</plugin>
+            <plugin>gz_ros2_control/GazeboSimSystem</plugin>
         </hardware>
         <!-- Add joint hardware interfaces -->
         <xacro:include filename="core/joint_hardware_macros.urdf.xacro"/>   
@@ -34,7 +34,7 @@
     </ros2_control>
 
     <gazebo>
-        <plugin filename="ign_ros2_control-system" name="ign_ros2_control::IgnitionROS2ControlPlugin">
+        <plugin filename="libgz_ros2_control-system.so" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
             <parameters>$(find joint_controller)/config/multiple_joints_test.yaml</parameters>
         </plugin>
     </gazebo>
