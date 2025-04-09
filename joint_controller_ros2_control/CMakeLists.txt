@@ -7,12 +7,6 @@ endif()
 
 # find dependencies
 
-# SUPPORT FOR ROS2_CONTROL VERSION 3.0.0
-if(NOT controller_manager_VERSION VERSION_LESS "3.0.0")
-    add_definitions(-DROS2_CONTROL_VERSION_3)
-    message(STATUS "ros2_control version 3.0.0.")
-endif()
-
 set(THIS_PACKAGE_INCLUDE_DEPENDS
   pluginlib
   rclcpp 
@@ -23,12 +17,22 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   realtime_tools
   joint_controller_msgs
   sensor_msgs
+  controller_manager
 
 )
 find_package(ament_cmake REQUIRED)
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
   find_package(${Dependency} REQUIRED)
 endforeach()
+
+# SUPPORT FOR ROS2_CONTROL VERSION 3.0.0
+if(NOT controller_manager_VERSION VERSION_LESS "3.0.0")
+    add_definitions(-DROS2_CONTROL_VER_3)
+    message(STATUS "Compiling for ros2_control version >= 3.0.0")
+else()
+    message(STATUS "Compiling for ros2_control version < 3.0.0")
+endif()
+
 
 generate_parameter_library(joint_controller_parameters
   src/joint_controller_parameters.yaml
