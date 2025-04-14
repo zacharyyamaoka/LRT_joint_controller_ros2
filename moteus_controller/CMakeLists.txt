@@ -25,15 +25,6 @@ foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
   find_package(${Dependency} REQUIRED)
 endforeach()
 
-# SUPPORT FOR ROS2_CONTROL VERSION 3.0.0
-if(NOT controller_manager_VERSION VERSION_LESS "3.0.0")
-    add_definitions(-DROS2_CONTROL_VER_3)
-    message(STATUS "Compiling for ros2_control version >= 3.0.0")
-else()
-    message(STATUS "Compiling for ros2_control version < 3.0.0")
-endif()
-
-
 generate_parameter_library(moteus_controller_parameters
   src/moteus_controller_parameters.yaml
 )

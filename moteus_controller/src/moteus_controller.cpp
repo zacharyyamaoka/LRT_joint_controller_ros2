@@ -126,7 +126,6 @@ controller_interface::CallbackReturn MoteusController::on_deactivate(
     return controller_interface::CallbackReturn::SUCCESS;
 }
 
-#ifdef ROS2_CONTROL_VER_3
 controller_interface::return_type MoteusController::update_reference_from_subscribers(
     const rclcpp::Time & time, const rclcpp::Duration & period
 )
@@ -165,45 +164,6 @@ controller_interface::return_type MoteusController::update_reference_from_subscr
     }
     return controller_interface::return_type::OK;
 }
-
-#else
-controller_interface::return_type MoteusController::update_reference_from_subscribers()
-{
-    /* Update reference commands from message */
-    auto current_ref = input_commands_.readFromRT();
-    JointCommandMsg& joint_reference_msg = *(*current_ref);
-    size_t message_size = joint_reference_msg.name.size();
-    for(size_t i = 0; i < message_size; ++i)
-    {
-        const auto& message_joint_name = joint_reference_msg.name[i];
-        auto joint_name_iterator = std::find(joint_names_.begin(), joint_names_.end(), message_joint_name);
-        if(joint_name_iterator == joint_names_.end())
-        {
-            RCLCPP_WARN(get_node()->get_logger(),
-                "Joint named (%s) doesn't exist!",
-                message_joint_name.c_str());
-            continue;
-        }
-
-        size_t index = std::distance(joint_names_.begin(), joint_name_iterator);
-
-        if ((!std::isnan(joint_reference_msg.desired_position[index])) 
-                && (!std::isnan(joint_reference_msg.desired_velocity[index]))
-                && (!std::isnan(joint_reference_msg.kp_scale[index])) 
-                && (!std::isnan(joint_reference_msg.kd_scale[index]))
-                && (!std::isnan(joint_reference_msg.feedforward_effort[index])))
-        {
-            JointCommands& joint_command = joint_commands_[index];
-            if(has_position_interface_) joint_command.desired_position_ = joint_reference_msg.desired_position[i];
-            if(has_velocity_interface_) joint_command.desired_velocity_ = joint_reference_msg.desired_velocity[i];
-            if(has_feedforward_effort_interface_) joint_command.feedforward_effort_ = joint_reference_msg.feedforward_effort[i];
-            if(has_kp_scale_interface_) joint_command.kp_scale_ = joint_reference_msg.kp_scale[i];
-            if(has_kd_scale_interface_) joint_command.kd_scale_ = joint_reference_msg.kd_scale[i];
-        }
-    }
-    return controller_interface::return_type::OK;
-}
-#endif
 
 controller_interface::return_type MoteusController::update_and_write_commands(
       const rclcpp::Time & time, const rclcpp::Duration & period)
@@ -387,14 +347,12 @@ std::vector<hardware_interface::CommandInterface> MoteusController::on_export_re
     reference_interfaces_.resize(joint_names_.size() * params_.reference_interfaces.size(), std::numeric_limits<double>::quiet_NaN());
     return reference_interfaces;
 }
-#ifdef ROS2_CONTROL_VER_3
 std::vector<hardware_interface::StateInterface> MoteusController::on_export_state_interfaces() 
 {
     /* No state interfaces exported, it is a one way controller! */
     std::vector<hardware_interface::StateInterface> state_interfaces;
     return state_interfaces;
 }
-#endif
 
 void MoteusController::reset_controller_reference_msg(
   const std::shared_ptr<JointCommandMsg>& _msg, const std::vector<std::string> & _joint_names)

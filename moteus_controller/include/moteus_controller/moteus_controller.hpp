@@ -57,14 +57,9 @@ namespace moteus_controller
     controller_interface::CallbackReturn on_deactivate(
       const rclcpp_lifecycle::State & previous_state) override;
 
-    #ifdef ROS2_CONTROL_VER_3
     MOTEUS_CONTROLLER_INTERFACE__VISIBILITY_PUBLIC
     controller_interface::return_type update_reference_from_subscribers(
       const rclcpp::Time & time, const rclcpp::Duration & period) override;
-    #else
-    MOTEUS_CONTROLLER_INTERFACE__VISIBILITY_PUBLIC
-    controller_interface::return_type update_reference_from_subscribers() override; 
-    #endif
 
     MOTEUS_CONTROLLER_INTERFACE__VISIBILITY_PUBLIC 
     controller_interface::return_type update_and_write_commands(
@@ -76,9 +71,7 @@ namespace moteus_controller
     
     std::vector<hardware_interface::CommandInterface> on_export_reference_interfaces() override;
 
-    #ifdef ROS2_CONTROL_VER_3
     std::vector<hardware_interface::StateInterface> on_export_state_interfaces() override; 
-    #endif
 
     bool on_set_chained_mode(bool chained_mode) override;
 
