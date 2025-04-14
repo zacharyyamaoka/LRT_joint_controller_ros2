@@ -18,7 +18,7 @@ from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, RegisterEventHandler
+from launch.actions import DeclareLaunchArgument, RegisterEventHandler, LogInfo
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit, OnProcessStart
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
@@ -30,12 +30,36 @@ from launch_ros.parameter_descriptions import ParameterValue
 
 from launch_ros.actions import Node
 
-# ros2 launch joint_controller multiple_joints_test.launch.py
+import yaml
+# ros2 launch joint_controller gazebo_test.launch.py urdf_file:=single_joint_test.urdf.xacro 
+# ros2 launch joint_controller gazebo_test.launch.py urdf_file:=multiple_joints_test.urdf.xacro 
+# ros2 launch joint_controller gazebo_test.launch.py urdf_file:=chaining_joint_test.urdf.xacro 
 
 def generate_launch_description():
 
+
+    # Once gazebo is running, get current view with: 
+    # gz topic -e -t /gui/camera/pose
+    # then update string below
+    set_camera_pose = ExecuteProcess(
+        cmd=[
+            "gz", "service",
+            "-s", "/gui/move_to/pose",
+            "--reqtype", "gz.msgs.GUICamera",
+            "--reptype", "gz.msgs.Boolean",
+            "--timeout", "10000",
+            "--req",
+            "pose: { position: { x: 2.8076, y: -0.0203, z: 1.1676 }, "
+            "orientation: { x: 0.1676, y: 0.0012, z: -0.9858, w: 0.0072 } }"
+        ],
+        shell=False,
+        output="screen"
+    )
+
     # Declare arguments
     declared_arguments = []
+
+    declared_arguments.append(set_camera_pose)
 
     declared_arguments.append(
         DeclareLaunchArgument(
@@ -47,16 +71,10 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "urdf_file",
-            default_value="multiple_joints_test.urdf.xacro",
+            default_value="single_joint_test.urdf.xacro",
         )
     )
 
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "controller_type_file",
-            default_value="multiple_joints_test.yaml",
-        )
-    )
 
     declared_arguments.append(
         DeclareLaunchArgument(
@@ -68,7 +86,6 @@ def generate_launch_description():
     # Initialize Arguments
     package_name = LaunchConfiguration("package")
     urdf_file = LaunchConfiguration("urdf_file")
-    controller_file = LaunchConfiguration("controller_type_file")
     controller_type = LaunchConfiguration("controller_type")
 
 
@@ -128,20 +145,23 @@ def generate_launch_description():
         output='screen'
     )
 
-    # Bridge between ros2 and Ignition Gazebo
-    # ros2_gazebo_sim_bridge =  IncludeLaunchDescription(
-    #         PythonLaunchDescriptionSource(
-    #             [os.path.join(get_package_share_directory('ros_ign_gazebo'),
-    #                           'launch', 'ign_gazebo.launch.py')]),
-    #         launch_arguments=[('gz_args', [' -r -v 4 empty.sdf'])])
-    gazebo_sim_bridge = IncludeLaunchDescription(
+    gazebo_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
             get_package_share_directory('ros_gz_sim'), 'launch'), '/gz_sim.launch.py']),
-            launch_arguments={'gz_args': ['-r -v -v4 ', world], 'on_exit_shutdown': 'true'}.items()
+            launch_arguments={'gz_args': ['-r -v1 ', world], 'on_exit_shutdown': 'true'}.items()
         )
     
+    gazebo_bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
+        output='screen'
+    )
+
     nodes = [
-        gazebo_sim_bridge,
+        gazebo_sim,
+        gazebo_bridge,
+        LogInfo(msg=["Using world file: ", world]),
 
         RegisterEventHandler(
             event_handler=OnProcessExit(
