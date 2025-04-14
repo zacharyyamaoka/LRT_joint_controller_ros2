@@ -1,7 +1,7 @@
 #ifndef _MOTEUS_CONTROLLER_CORE_HPP_
 #define _MOTEUS_CONTROLLER_CORE_HPP_
 
-#include "moteus_controller_ros2_control/pid_controller/pid_controller.hpp"
+#include "moteus_controller/pid_controller/pid_controller.hpp"
 #include <algorithm>
 
 namespace moteus_controller_core
@@ -32,7 +32,7 @@ namespace moteus_controller_core
     };
 
 
-    class JointControllerCore
+    class MoteusControllerCore
     {
         private:
 
@@ -44,10 +44,10 @@ namespace moteus_controller_core
 
         public:
 
-        JointControllerCore(JointParameters _joint_params,
+        MoteusControllerCore(JointParameters _joint_params,
          pid_controller::PidParameters _pid_params, double _frequency);
-        JointControllerCore(const JointControllerCore& other) = default;
-        JointControllerCore(JointControllerCore&& other) = default;
+        MoteusControllerCore(const MoteusControllerCore& other) = default;
+        MoteusControllerCore(MoteusControllerCore&& other) = default;
 
         /* Effort calculation */
         double calculateEffort(const JointCommands& _joint_command,const JointStates& _joint_state);

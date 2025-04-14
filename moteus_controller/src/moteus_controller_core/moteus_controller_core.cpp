@@ -1,12 +1,12 @@
-#include "moteus_controller_ros2_control/moteus_controller_core/moteus_controller_core.hpp"
+#include "moteus_controller/moteus_controller_core/moteus_controller_core.hpp"
 
 using namespace moteus_controller_core;
 
-JointControllerCore::JointControllerCore(JointParameters _joint_params,
+MoteusControllerCore::MoteusControllerCore(JointParameters _joint_params,
  pid_controller::PidParameters _pid_params, double _frequency): 
     joint_params_(_joint_params), pid_controller_(_pid_params, _frequency){}
 
-double JointControllerCore::calculateEffort(const JointCommands& _joint_command,const JointStates& _joint_state)
+double MoteusControllerCore::calculateEffort(const JointCommands& _joint_command,const JointStates& _joint_state)
 {
     double desired_position = std::clamp(_joint_command.desired_position_ + joint_params_.position_offset_,
          joint_params_.position_min_, joint_params_.position_max_);

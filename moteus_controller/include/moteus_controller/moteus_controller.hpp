@@ -8,6 +8,7 @@
 
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 
+#include "moteus_controller_msgs/msg/moteus_controller_state.hpp"
 #include "moteus_controller_msgs/msg/joint_command.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "controller_interface/chainable_controller_interface.hpp"
@@ -16,20 +17,20 @@
 #include "realtime_tools/realtime_buffer.h"
 #include "realtime_tools/realtime_publisher.h"
 
-#include "moteus_controller_ros2_control/moteus_controller_core/moteus_controller_core.hpp"
-#include "moteus_controller_ros2_control/visibility_control.hpp"
+#include "moteus_controller/moteus_controller_core/moteus_controller_core.hpp"
+#include "moteus_controller/visibility_control.hpp"
 #include "moteus_controller_parameters.hpp"
 
 namespace moteus_controller
 {
 
-  class JointController : public controller_interface::ChainableControllerInterface
+  class MoteusController : public controller_interface::ChainableControllerInterface
   {
 
     public:
 
     MOTEUS_CONTROLLER_INTERFACE__VISIBILITY_PUBLIC 
-    JointController();
+    MoteusController();
 
     MOTEUS_CONTROLLER_INTERFACE__VISIBILITY_PUBLIC 
     controller_interface::CallbackReturn on_init() override;
@@ -92,7 +93,7 @@ namespace moteus_controller
     controller_interface::CallbackReturn sort_state_interfaces();
     controller_interface::CallbackReturn sort_command_interfaces();
 
-    /* Get parameters for joints and setup JointControllerCore objects */
+    /* Get parameters for joints and setup MoteusControllerCore objects */
     controller_interface::CallbackReturn configure_joints();
 
     /* Callback for subscriber */
@@ -120,12 +121,19 @@ namespace moteus_controller
     bool has_kd_scale_interface_ = false;
 
     /* Controller implementation objects */
-    using JointControllerCore = moteus_controller_core::JointControllerCore;
-    std::vector<JointControllerCore> moteus_controllers_;
+    using MoteusControllerCore = moteus_controller_core::MoteusControllerCore;
+    std::vector<MoteusControllerCore> moteus_controllers_;
     
     /* Realtime subscriber */
     rclcpp::Subscription<JointCommandMsg>::SharedPtr command_subscriber_ = nullptr;
     realtime_tools::RealtimeBuffer<std::shared_ptr<JointCommandMsg>> input_commands_;
+
+    /* Realtime publisher */
+    using MoteusControllerState = moteus_controller_msgs::msg::MoteusControllerState;
+    using StatePublisher = realtime_tools::RealtimePublisher<MoteusControllerState>;
+    using StatePublisherPtr = std::unique_ptr<StatePublisher>;
+    rclcpp::Publisher<MoteusControllerState>::SharedPtr publisher_;
+    StatePublisherPtr state_publisher_;
 
     /* Default interfaces */
     std::vector<std::string> default_state_interfaces_{"position", "velocity"};

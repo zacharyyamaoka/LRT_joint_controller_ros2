@@ -6,7 +6,7 @@ controller_manager:
       type: joint_state_broadcaster/JointStateBroadcaster
 
     moteus_controller:
-      type: moteus_controller/JointController
+      type: moteus_controller/MoteusController
 
 
 moteus_controller:

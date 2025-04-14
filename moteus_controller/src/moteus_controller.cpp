@@ -2,8 +2,8 @@
 
 using namespace moteus_controller;
 
-JointController::JointController(): controller_interface::ChainableControllerInterface(){}
-controller_interface::CallbackReturn JointController::on_init()
+MoteusController::MoteusController(): controller_interface::ChainableControllerInterface(){}
+controller_interface::CallbackReturn MoteusController::on_init()
 {
     /* Get parameter listener and parameters structure */
     try
@@ -20,7 +20,7 @@ controller_interface::CallbackReturn JointController::on_init()
     return controller_interface::CallbackReturn::SUCCESS;
 }
 
-controller_interface::InterfaceConfiguration JointController::command_interface_configuration() const
+controller_interface::InterfaceConfiguration MoteusController::command_interface_configuration() const
 {
     /* Get all loaned command interfaces used by controller from hardware inetrface */
     controller_interface::InterfaceConfiguration command_interfaces_config;
@@ -31,11 +31,11 @@ controller_interface::InterfaceConfiguration JointController::command_interface_
     {
         command_interfaces_config.names.push_back(joint_name + "/" + params_.command_interface);
     }
-    RCLCPP_INFO(get_node()->get_logger(), "Command interfaces for JointController configured successfully!");
+    RCLCPP_INFO(get_node()->get_logger(), "Command interfaces for MoteusController configured successfully!");
     return command_interfaces_config;
 }
 
-controller_interface::InterfaceConfiguration JointController::state_interface_configuration() const
+controller_interface::InterfaceConfiguration MoteusController::state_interface_configuration() const
 {
     /* Get all loaned state interfaces used by controller from hardware inetrface */
     controller_interface::InterfaceConfiguration state_interfaces_config;
@@ -49,11 +49,11 @@ controller_interface::InterfaceConfiguration JointController::state_interface_co
             state_interfaces_config.names.push_back(joint_name + "/" + interface);
         }
     }
-    RCLCPP_INFO(get_node()->get_logger(), "State interfaces for JointController configured successfully!");
+    RCLCPP_INFO(get_node()->get_logger(), "State interfaces for MoteusController configured successfully!");
     return state_interfaces_config;
 }
 
-controller_interface::CallbackReturn JointController::on_cleanup(
+controller_interface::CallbackReturn MoteusController::on_cleanup(
       const rclcpp_lifecycle::State & previous_state)
 {
     /* Clean up all controll structures when controller is terminated */
@@ -62,11 +62,11 @@ controller_interface::CallbackReturn JointController::on_cleanup(
     joint_states_.clear();
     moteus_controllers_.clear();
     
-    RCLCPP_INFO(get_node()->get_logger(), "JointController cleaned successfully!");
+    RCLCPP_INFO(get_node()->get_logger(), "MoteusController cleaned successfully!");
     return CallbackReturn::SUCCESS;
 }
 
-controller_interface::CallbackReturn JointController::on_configure(
+controller_interface::CallbackReturn MoteusController::on_configure(
       const rclcpp_lifecycle::State & previous_state)
 {
     /* Creating joint controllers, reference subscriber and buffer for reference messages */
@@ -82,17 +82,20 @@ controller_interface::CallbackReturn JointController::on_configure(
 
     command_subscriber_ = get_node()->create_subscription<JointCommandMsg>(
         "~/joint_commands", subscribers_qos,
-        std::bind(&JointController::reference_callback, this, std::placeholders::_1));
+        std::bind(&MoteusController::reference_callback, this, std::placeholders::_1));
 
     std::shared_ptr<JointCommandMsg> msg = std::make_shared<JointCommandMsg>();
     reset_controller_reference_msg(msg, joint_names_);
     input_commands_.writeFromNonRT(msg);
 
-    RCLCPP_INFO(get_node()->get_logger(), "JointController configured successfully!");
+    /* Create publisher for introspection */
+
+
+    RCLCPP_INFO(get_node()->get_logger(), "MoteusController configured successfully!");
     return controller_interface::CallbackReturn::SUCCESS;
 }
 
-controller_interface::CallbackReturn JointController::on_activate(
+controller_interface::CallbackReturn MoteusController::on_activate(
       const rclcpp_lifecycle::State & previous_state)
 {
     /* Add all loaned state and command interfaces to sorted vectors */
@@ -111,7 +114,7 @@ controller_interface::CallbackReturn JointController::on_activate(
     return controller_interface::CallbackReturn::SUCCESS;
 }
 
-controller_interface::CallbackReturn JointController::on_deactivate(
+controller_interface::CallbackReturn MoteusController::on_deactivate(
     const rclcpp_lifecycle::State & previous_state)
 {
     /* Remove all loaned command and state interfaces from structures and release them*/
@@ -124,7 +127,7 @@ controller_interface::CallbackReturn JointController::on_deactivate(
 }
 
 #ifdef ROS2_CONTROL_VER_3
-controller_interface::return_type JointController::update_reference_from_subscribers(
+controller_interface::return_type MoteusController::update_reference_from_subscribers(
     const rclcpp::Time & time, const rclcpp::Duration & period
 )
 {
@@ -164,7 +167,7 @@ controller_interface::return_type JointController::update_reference_from_subscri
 }
 
 #else
-controller_interface::return_type JointController::update_reference_from_subscribers()
+controller_interface::return_type MoteusController::update_reference_from_subscribers()
 {
     /* Update reference commands from message */
     auto current_ref = input_commands_.readFromRT();
@@ -202,7 +205,7 @@ controller_interface::return_type JointController::update_reference_from_subscri
 }
 #endif
 
-controller_interface::return_type JointController::update_and_write_commands(
+controller_interface::return_type MoteusController::update_and_write_commands(
       const rclcpp::Time & time, const rclcpp::Duration & period)
 {
     /* Get current state and send commands to loaned comannd interfaces */
@@ -217,14 +220,14 @@ controller_interface::return_type JointController::update_and_write_commands(
     return controller_interface::return_type::OK;
 }
 
-bool JointController::on_set_chained_mode(bool chained_mode)
+bool MoteusController::on_set_chained_mode(bool chained_mode)
 {
     /* Always accept switch to/from chained mode */
 
     return true || chained_mode;
 }
 
-controller_interface::CallbackReturn JointController::configure_joints()
+controller_interface::CallbackReturn MoteusController::configure_joints()
 {
     /* Create all joint controllers and important joint parameters */
     if(params_.joint_names.size() != params_.pid_gains.joint_names_map.size())
@@ -330,7 +333,7 @@ controller_interface::CallbackReturn JointController::configure_joints()
         pid_params.integral_coef_ = listener_pid_param.i;
         pid_params.integration_limit_ = listener_pid_param.ilimit;
 
-        moteus_controller_core::JointControllerCore moteus_controller(joint_params, 
+        moteus_controller_core::MoteusControllerCore moteus_controller(joint_params, 
             pid_params, pid_frequency);
         
         moteus_controllers_.push_back(moteus_controller);
@@ -338,7 +341,7 @@ controller_interface::CallbackReturn JointController::configure_joints()
     return controller_interface::CallbackReturn::SUCCESS;
 }
 
-std::vector<hardware_interface::CommandInterface> JointController::on_export_reference_interfaces()
+std::vector<hardware_interface::CommandInterface> MoteusController::on_export_reference_interfaces()
 {
     /* Export reference interfaces for other controllers to use */
     std::vector<hardware_interface::CommandInterface> reference_interfaces;
@@ -377,7 +380,7 @@ std::vector<hardware_interface::CommandInterface> JointController::on_export_ref
             else
             {
                 RCLCPP_FATAL(get_node()->get_logger(),
-                    "Exception thrown during controller's reference export, not suppossed to happen lol\n");
+                    "Exception thrown during controller's reference export, likely unknown interface\n");
             }
         }
     }
@@ -385,7 +388,7 @@ std::vector<hardware_interface::CommandInterface> JointController::on_export_ref
     return reference_interfaces;
 }
 #ifdef ROS2_CONTROL_VER_3
-std::vector<hardware_interface::StateInterface> JointController::on_export_state_interfaces() 
+std::vector<hardware_interface::StateInterface> MoteusController::on_export_state_interfaces() 
 {
     /* No state interfaces exported, it is a one way controller! */
     std::vector<hardware_interface::StateInterface> state_interfaces;
@@ -393,7 +396,7 @@ std::vector<hardware_interface::StateInterface> JointController::on_export_state
 }
 #endif
 
-void JointController::reset_controller_reference_msg(
+void MoteusController::reset_controller_reference_msg(
   const std::shared_ptr<JointCommandMsg>& _msg, const std::vector<std::string> & _joint_names)
 {
     /* Reset all values in message */
@@ -408,7 +411,7 @@ void JointController::reset_controller_reference_msg(
     _msg->feedforward_effort.resize(_joint_names.size(), std::numeric_limits<double>::quiet_NaN());
 }
 
-controller_interface::CallbackReturn JointController::sort_state_interfaces()
+controller_interface::CallbackReturn MoteusController::sort_state_interfaces()
 {
     /* Add all loaned state interfaces to internal controller structures */
     if (state_interfaces_.empty())
@@ -463,11 +466,11 @@ controller_interface::CallbackReturn JointController::sort_state_interfaces()
         return controller_interface::CallbackReturn::ERROR;
     }
 
-    RCLCPP_INFO(get_node()->get_logger(), "State interfaces for JointController sorted successfully!");
+    RCLCPP_INFO(get_node()->get_logger(), "State interfaces for MoteusController sorted successfully!");
     return controller_interface::CallbackReturn::SUCCESS;
 }
 
-controller_interface::CallbackReturn JointController::sort_command_interfaces()
+controller_interface::CallbackReturn MoteusController::sort_command_interfaces()
 {
     /* Add all loaned command interfaces to internal controller structures */
     if (command_interfaces_.empty())
@@ -505,11 +508,11 @@ controller_interface::CallbackReturn JointController::sort_command_interfaces()
         return controller_interface::CallbackReturn::ERROR;
     }
 
-    RCLCPP_INFO(get_node()->get_logger(), "Command interfaces for JointController sorted successfully!");
+    RCLCPP_INFO(get_node()->get_logger(), "Command interfaces for MoteusController sorted successfully!");
     return controller_interface::CallbackReturn::SUCCESS;
 }
 
-void JointController::reference_callback(const std::shared_ptr<JointCommandMsg> _reference_msg)
+void MoteusController::reference_callback(const std::shared_ptr<JointCommandMsg> _reference_msg)
 {
     /* Callback for subscriber */
     if(_reference_msg->desired_position.size() != joint_num_
@@ -538,4 +541,4 @@ void JointController::reference_callback(const std::shared_ptr<JointCommandMsg> 
 }
 
 #include <pluginlib/class_list_macros.hpp>
-PLUGINLIB_EXPORT_CLASS(moteus_controller::JointController, controller_interface::ChainableControllerInterface)
+PLUGINLIB_EXPORT_CLASS(moteus_controller::MoteusController, controller_interface::ChainableControllerInterface)

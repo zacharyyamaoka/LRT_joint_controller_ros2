@@ -1,6 +1,6 @@
 <library path="moteus_controller">
-    <class name="moteus_controller/JointController"
-           type="moteus_controller::JointController"
+    <class name="moteus_controller/MoteusController"
+           type="moteus_controller::MoteusController"
            base_class_type="controller_interface::ChainableControllerInterface">
         <description>
             Joint controller for simulation which only support effort command input

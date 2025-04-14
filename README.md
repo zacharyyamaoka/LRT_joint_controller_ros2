@@ -86,7 +86,7 @@ colcon build --packages-select joint_controller_msgs moteus_controller
 ```yaml
 ...
 moteus_controller:
-      type: moteus_controller/JointController
+      type: moteus_controller/MoteusController
 ...
 moteus_controller:
   ros__parameters:
