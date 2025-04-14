@@ -1,0 +1,46 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 500  # Hz
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    moteus_controller:
+      type: moteus_controller/JointController
+    
+    higher_level_controller:
+      type: forward_command_controller/MultiInterfaceForwardCommandController
+
+# In an actual application you would likely use JTC here
+higher_level_controller:
+  ros__parameters:
+    joint: moteus_controller/body_1_joint
+    interface_names: 
+      - position
+      - velocity
+
+moteus_controller:
+  ros__parameters:
+    joint_names:
+      - body_1_joint
+
+    joint_params:
+      body_1_joint: 
+        position_max: 3.14
+        position_min: -3.14
+        position_offset: 0.0
+        velocity_max: 10.0
+        effort_max: 10.0
+    
+    reference_interfaces: 
+      - "position"
+      - "velocity"
+
+    frequency: 500.0
+
+    pid_gains:
+      body_1_joint:
+        p: 1.0
+        d: 0.5
+        i: 0.0
+        ilimit: 1.0

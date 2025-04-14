@@ -1,0 +1,9 @@
+// Sending position 1.0 for joint "body_1_joint" through higher_level_controller
+
+ros2 topic pub /higher_level_controller/commands std_msgs/msg/Float64MultiArray "data:
+- 0
+- 1.2"
+
+ros2 topic pub /higher_level_controller/commands std_msgs/msg/Float64MultiArray "data:
+- 1
+- 0"
