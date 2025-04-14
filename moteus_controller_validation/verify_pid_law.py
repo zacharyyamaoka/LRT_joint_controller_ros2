@@ -19,6 +19,7 @@ from collections import namedtuple
 
     Notes:
     - Free spining motors have lower interia and may become vibrate/make noise if kd is to high
+    - Requires moteus python library to be installed, see: https://github.com/mjbots/moteus/blob/main/docs/getting_started.md
 
 """
 
