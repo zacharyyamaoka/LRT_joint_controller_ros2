@@ -29,7 +29,9 @@ controller_interface::InterfaceConfiguration MoteusController::command_interface
     command_interfaces_config.names.reserve(joint_num_);
     for (const auto & joint_name : joint_names_)
     {
-        command_interfaces_config.names.push_back(joint_name + "/" + params_.command_interface);
+        std::string full_name = joint_name + "/" + params_.command_interface;
+        command_interfaces_config.names.push_back(full_name);
+        RCLCPP_INFO(get_node()->get_logger(), "Adding command interface: %s", full_name.c_str());
     }
     RCLCPP_INFO(get_node()->get_logger(), "Command interfaces for MoteusController configured successfully!");
     return command_interfaces_config;
@@ -46,8 +48,9 @@ controller_interface::InterfaceConfiguration MoteusController::state_interface_c
     {
         for (const auto & joint_name: joint_names_)
         {
-            state_interfaces_config.names.push_back(joint_name + "/" + interface);
-        }
+            std::string full_name = joint_name + "/" + interface;
+            state_interfaces_config.names.push_back(full_name);
+            RCLCPP_INFO(get_node()->get_logger(), "Adding state interface: %s", full_name.c_str());        }
     }
     RCLCPP_INFO(get_node()->get_logger(), "State interfaces for MoteusController configured successfully!");
     return state_interfaces_config;
@@ -132,8 +135,7 @@ controller_interface::CallbackReturn MoteusController::on_deactivate(
 }
 
 controller_interface::return_type MoteusController::update_reference_from_subscribers(
-    const rclcpp::Time & time, const rclcpp::Duration & period
-)
+    const rclcpp::Time & time, const rclcpp::Duration & period)
 {
     auto current_ref = input_commands_.readFromRT();
     JointCommandMsg& joint_reference_msg = *(*current_ref);
@@ -355,10 +357,20 @@ std::vector<hardware_interface::CommandInterface> MoteusController::on_export_re
     reference_interfaces_.resize(joint_names_.size() * params_.reference_interfaces.size(), std::numeric_limits<double>::quiet_NaN());
     return reference_interfaces;
 }
+
 std::vector<hardware_interface::StateInterface> MoteusController::on_export_state_interfaces() 
 {
-    /* No state interfaces exported, it is a one way controller! */
     std::vector<hardware_interface::StateInterface> state_interfaces;
+    state_interfaces.reserve(joint_num_ * default_state_interfaces_.size());
+
+    for (size_t i = 0; i < joint_num_; ++i)
+    {
+        const std::string & joint_name = joint_names_[i];
+
+        state_interfaces.emplace_back(get_node()->get_name(), joint_name + "/position", &joint_states_[i].position_);
+        state_interfaces.emplace_back(get_node()->get_name(), joint_name + "/velocity", &joint_states_[i].velocity_);
+    }
+
     return state_interfaces;
 }
 
@@ -407,7 +419,6 @@ void MoteusController::configure_state_msg(StatePublisher& publisher, const std:
   
     publisher.unlock();
 }
-
 
 void MoteusController::publish_state(
     const rclcpp::Time & time,
