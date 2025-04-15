@@ -18,5 +18,20 @@ double MoteusControllerCore::calculateEffort(const JointCommands& _joint_command
     double effort =  pid_controller_.calculateEffort(position_error, velocity_error,
      _joint_command.feedforward_effort_, _joint_command.kp_scale_, _joint_command.kd_scale_);
 
-    return std::clamp(effort, -joint_params_.effort_max_, joint_params_.effort_max_);
+     effort = std::clamp(effort, -joint_params_.effort_max_, joint_params_.effort_max_);
+
+    _total_effort = effort;
+
+    return effort;
+}
+
+ControllerState MoteusControllerCore::queryState() const
+{
+    ControllerState state;
+    state.P = pid_controller_.P;
+    state.I = pid_controller_.I;
+    state.D = pid_controller_.D;
+    state.FF = pid_controller_.FF;
+    state.total_effort = _total_effort;
+    return state;
 }

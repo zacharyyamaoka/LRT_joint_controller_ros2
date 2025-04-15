@@ -90,6 +90,11 @@ controller_interface::CallbackReturn MoteusController::on_configure(
 
     /* Create publisher for introspection */
 
+    publisher_ = get_node()->create_publisher<MoteusControllerState>(
+        "~/controller_state", rclcpp::SystemDefaultsQoS());
+    state_publisher_ = std::make_unique<StatePublisher>(publisher_);
+
+    configure_state_msg(*state_publisher_, joint_names_);
 
     RCLCPP_INFO(get_node()->get_logger(), "MoteusController configured successfully!");
     return controller_interface::CallbackReturn::SUCCESS;
@@ -177,6 +182,9 @@ controller_interface::return_type MoteusController::update_and_write_commands(
         double torque = moteus_controllers_[i].calculateEffort(joint_commands_[i], joint_states_[i]);
         effort_command_interfaces_[i].get().set_value(torque);
     }
+
+    publish_state(time, joint_commands_, joint_states_, moteus_controllers_);
+
     return controller_interface::return_type::OK;
 }
 
@@ -355,7 +363,7 @@ std::vector<hardware_interface::StateInterface> MoteusController::on_export_stat
 }
 
 void MoteusController::reset_controller_reference_msg(
-  const std::shared_ptr<JointCommandMsg>& _msg, const std::vector<std::string> & _joint_names)
+    const std::shared_ptr<JointCommandMsg>& _msg, const std::vector<std::string> & _joint_names)
 {
     /* Reset all values in message */
     _msg->name = _joint_names;
@@ -367,6 +375,81 @@ void MoteusController::reset_controller_reference_msg(
     _msg->kp_scale.resize(_joint_names.size(), 1);
     _msg->kd_scale.resize(_joint_names.size(), 1);
     _msg->feedforward_effort.resize(_joint_names.size(), std::numeric_limits<double>::quiet_NaN());
+}
+
+void MoteusController::configure_state_msg(StatePublisher& publisher, const std::vector<std::string>& joint_names)
+{
+    const size_t dof = joint_names.size();
+
+    publisher.lock();
+  
+    // Set joint names
+    publisher.msg_.name = joint_names;
+  
+    // Control signals / setpoints
+    publisher.msg_.control_position.resize(dof, std::numeric_limits<double>::quiet_NaN());
+    publisher.msg_.control_velocity.resize(dof, std::numeric_limits<double>::quiet_NaN());
+    publisher.msg_.feedforward.resize(dof, std::numeric_limits<double>::quiet_NaN());
+    publisher.msg_.kp.resize(dof, std::numeric_limits<double>::quiet_NaN());
+    publisher.msg_.kd.resize(dof, std::numeric_limits<double>::quiet_NaN());
+    publisher.msg_.max_torque.resize(dof, std::numeric_limits<double>::quiet_NaN());
+  
+    // Feedback (measured) values
+    publisher.msg_.position.resize(dof, std::numeric_limits<double>::quiet_NaN());
+    publisher.msg_.velocity.resize(dof, std::numeric_limits<double>::quiet_NaN());
+    publisher.msg_.torque.resize(dof, std::numeric_limits<double>::quiet_NaN());
+  
+    // PID internal state
+    publisher.msg_.p.resize(dof, std::numeric_limits<double>::quiet_NaN());
+    publisher.msg_.i.resize(dof, 0.0);
+    publisher.msg_.d.resize(dof, std::numeric_limits<double>::quiet_NaN());
+    publisher.msg_.command.resize(dof, std::numeric_limits<double>::quiet_NaN());
+  
+    publisher.unlock();
+}
+
+
+void MoteusController::publish_state(
+    const rclcpp::Time & time,
+    const std::vector<JointCommands> & joint_commands,
+    const std::vector<JointStates> & joint_states,
+    const std::vector<MoteusControllerCore> & controllers)
+{
+  if (state_publisher_ && state_publisher_->trylock())
+  {
+    auto & msg = state_publisher_->msg_;
+    msg.header.stamp = time;
+
+    for (size_t i = 0; i < joint_num_; ++i)
+    {
+      const auto & joint_cmd = joint_commands[i];
+      const auto & joint_state = joint_states[i];
+      const auto & controller = controllers[i];
+      const auto controller_state = controller.queryState();
+
+      // Control signals / setpoints
+      msg.control_position[i] = joint_cmd.desired_position_;
+      msg.control_velocity[i] = joint_cmd.desired_velocity_;
+      msg.feedforward[i]      = joint_cmd.feedforward_effort_;
+      msg.kp[i]               = joint_cmd.kp_scale_;
+      msg.kd[i]               = joint_cmd.kd_scale_;
+    //   msg.max_torque[i]       = joint_cmd.max_torque_; // Not implemented right now
+
+      // Reference values used to calc error: ref - control = error
+      msg.position[i] = joint_state.position_;
+      msg.velocity[i] = joint_state.velocity_;
+      msg.torque[i]   = joint_state.effort_;
+
+      // PID internal state: error * kp * kp_static
+      msg.p[i]          = controller_state.P;
+      msg.i[i]   = controller_state.I;
+      msg.d[i]          = controller_state.D;
+      msg.command[i]    = controller_state.total_effort;
+
+    }
+
+    state_publisher_->unlockAndPublish();
+  }
 }
 
 controller_interface::CallbackReturn MoteusController::sort_state_interfaces()

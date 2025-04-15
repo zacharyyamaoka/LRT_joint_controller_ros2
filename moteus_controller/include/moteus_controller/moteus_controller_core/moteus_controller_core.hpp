@@ -31,6 +31,14 @@ namespace moteus_controller_core
         double feedforward_effort_ = 0; /* [Nm] or [N]*/
     };
 
+        struct ControllerState
+    {
+        double P = 0;
+        double I = 0;
+        double D = 0;
+        double FF = 0;
+        double total_effort = 0;
+    };
 
     class MoteusControllerCore
     {
@@ -42,6 +50,8 @@ namespace moteus_controller_core
         /* Internal PID controller parameters */
         pid_controller::PidController pid_controller_;
 
+        double _total_effort;
+
         public:
 
         MoteusControllerCore(JointParameters _joint_params,
@@ -51,7 +61,8 @@ namespace moteus_controller_core
 
         /* Effort calculation */
         double calculateEffort(const JointCommands& _joint_command,const JointStates& _joint_state);
-        
+        ControllerState queryState() const;
+
     };
 };
 

@@ -32,9 +32,11 @@ double PidController::calculateIntegralEffort(double _position_error)
 double PidController::calculateEffort(double _position_error, double _velocity_error,
          double _feedforward_effort, double _proportional_scale, double _derivative_scale)
 {
-    double P = PidController::calculateProportionalEffort(_position_error, _proportional_scale);
-    double D = PidController::calculateDerivativeEffort(_velocity_error, _derivative_scale);
-    double I = PidController::calculateIntegralEffort(_position_error);
+    P = PidController::calculateProportionalEffort(_position_error, _proportional_scale);
+    D = PidController::calculateDerivativeEffort(_velocity_error, _derivative_scale);
+    I = PidController::calculateIntegralEffort(_position_error);
+    FF = _feedforward_effort;
+    
     return P + I + D + _feedforward_effort;
 }
 

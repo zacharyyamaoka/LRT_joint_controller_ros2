@@ -127,7 +127,14 @@ namespace moteus_controller
     using StatePublisherPtr = std::unique_ptr<StatePublisher>;
     rclcpp::Publisher<MoteusControllerState>::SharedPtr publisher_;
     StatePublisherPtr state_publisher_;
+    void configure_state_msg(StatePublisher& publisher, const std::vector<std::string>& joint_names);
 
+    void publish_state(
+      const rclcpp::Time & time,
+      const std::vector<JointCommands> & joint_commands,
+      const std::vector<JointStates> & joint_states,
+      const std::vector<MoteusControllerCore> & controllers);
+      
     /* Default interfaces */
     std::vector<std::string> default_state_interfaces_{"position", "velocity"};
     std::vector<std::string> default_command_interface_{"effort"};

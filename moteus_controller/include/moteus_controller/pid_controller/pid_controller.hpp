@@ -30,12 +30,16 @@ namespace pid_controller
         double calculateIntegralEffort(double _position_error);
         double calculateDerivativeEffort(double _velocity_error, double _derivative_scale);
 
-
         public:
 
         PidController(PidParameters _pid_params, double _frequency);
         PidController(const PidController& other) = default;
         PidController(PidController&& other) = default;
+
+        double P = 0.0;
+        double I = 0.0;
+        double D = 0.0;
+        double FF = 0.0;
 
         double calculateEffort(double _position_error, double _velocity_error,
             double _feedforward_effort, double _proportional_scale, double _derivative_scale); //  Tutaj liczymy wszystko
