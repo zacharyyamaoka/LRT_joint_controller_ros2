@@ -39,6 +39,33 @@ User can choose what interfaces to use.
 - :ballot_box_with_check: Working independently via subscriber using `moteus_controller/JointCommand` in `joint_controller_msgs` package
 - :ballot_box_with_check: Working in chain mode with other controllers
 
+### Differences to Moteus Controller
+
+The moteus controller implements a two stage PID controller. One for the torque (included below), and one from torque to current. [View Docs](https://github.com/mjbots/moteus/blob/main/docs/reference.mdhttps:/)
+
+```bash
+acceleration = trajectory_follower(command_position, command_velocity)
+control_velocity = command_velocity OR control_velocity + acceleration * dt OR 0.0
+control_position = command_position OR control_position + control_velocity * dt
+position_error = control_position - feedback_position
+velocity_error = control_velocity - feedback_velocity
+position_integrator = limit(position_integrator + ki * position_error * dt, ilimit)
+torque = position_integrator +
+         kp * kp_scale * position_error +
+         kd * kd_scale * velocity_error +
+         command_torque
+```
+
+Right now this package doesn't implement pure velocity control (something like `d pos nan -1 nan`) or `trajectory_follower` so the control signals are always calculated as:
+
+```bash
+control_velocity = command_velocity
+control_position = command_position 
+```
+
+Another limitation is that it doesn't include the current controller. In simulation, a commanded torque is applied directly to the body. In reality, there is alot of error between the desired torque and actual torque being applied via current flowing through motor windings.
+
+In the current state this package should provide a good first order approximation to the Moteus Controller. [Some inital work ](https://github.com/KNR-PW/LRT_one_power_unit_identification/tree/main/optimizationhttps:/)has been done on system identification between this virtual controller and the real controller, but requires further investigation.
 
 ### sim2real:
 

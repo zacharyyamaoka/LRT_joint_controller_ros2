@@ -5,5 +5,5 @@ ros2 topic pub /higher_level_controller/commands std_msgs/msg/Float64MultiArray 
 - 1.2"
 
 ros2 topic pub /higher_level_controller/commands std_msgs/msg/Float64MultiArray "data:
-- 1
-- 0"
+- 0.5
+- 1"
