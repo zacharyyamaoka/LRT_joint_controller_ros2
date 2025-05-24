@@ -20,6 +20,8 @@ controller_interface::CallbackReturn MoteusController::on_init()
     return controller_interface::CallbackReturn::SUCCESS;
 }
 
+// For Some reason command_interface_configuration and state_interface_configuration are called multiple times
+// They are basicly identical to the JTC.cpp though, so should be fine for now
 controller_interface::InterfaceConfiguration MoteusController::command_interface_configuration() const
 {
     /* Get all loaned command interfaces used by controller from hardware inetrface */
@@ -33,7 +35,7 @@ controller_interface::InterfaceConfiguration MoteusController::command_interface
         command_interfaces_config.names.push_back(full_name);
         RCLCPP_INFO(get_node()->get_logger(), "Adding command interface: %s", full_name.c_str());
     }
-    RCLCPP_INFO(get_node()->get_logger(), "Command interfaces for MoteusController configured successfully!");
+    RCLCPP_INFO(get_node()->get_logger(), "[SUCCESS] MoteusController.command_interface_configuration()");
     return command_interfaces_config;
 }
 
@@ -52,7 +54,7 @@ controller_interface::InterfaceConfiguration MoteusController::state_interface_c
             state_interfaces_config.names.push_back(full_name);
             RCLCPP_INFO(get_node()->get_logger(), "Adding state interface: %s", full_name.c_str());        }
     }
-    RCLCPP_INFO(get_node()->get_logger(), "State interfaces for MoteusController configured successfully!");
+    RCLCPP_INFO(get_node()->get_logger(), "[SUCCESS] MoteusController.state_interface_configuration()");
     return state_interfaces_config;
 }
 
@@ -99,13 +101,15 @@ controller_interface::CallbackReturn MoteusController::on_configure(
 
     configure_state_msg(*state_publisher_, joint_names_);
 
-    RCLCPP_INFO(get_node()->get_logger(), "MoteusController configured successfully!");
+    RCLCPP_INFO(get_node()->get_logger(), "[SUCCESS] MoteusController.on_configure()");
     return controller_interface::CallbackReturn::SUCCESS;
 }
 
 controller_interface::CallbackReturn MoteusController::on_activate(
       const rclcpp_lifecycle::State & previous_state)
 {
+
+    // In sort_state_interfaces and sort_command_interfaces we link the variables to the interfaces
     /* Add all loaned state and command interfaces to sorted vectors */
     if(sort_state_interfaces() != controller_interface::CallbackReturn::SUCCESS)
     {
@@ -119,6 +123,23 @@ controller_interface::CallbackReturn MoteusController::on_activate(
 
     reset_controller_reference_msg(*(input_commands_.readFromRT()), joint_names_);
 
+    // So that the arm holds its position on start up, set the intial set point to the current position.
+
+    for (size_t i = 0; i < joint_num_; ++i)
+    {
+        // Set the current joint position and velocity from the state interfaces
+        joint_states_[i].position_ = position_state_interfaces_[i].get().get_value();
+
+        // Set the joint command to the current state value if needed (i.e., not NaN)
+        if (!std::isnan(joint_states_[i].position_))
+        {
+            joint_commands_[i].desired_position_ = joint_states_[i].position_;
+        }
+    }
+
+
+
+    RCLCPP_INFO(get_node()->get_logger(), "[SUCCESS] MoteusController.on_activate()");
     return controller_interface::CallbackReturn::SUCCESS;
 }
 
@@ -517,8 +538,8 @@ controller_interface::CallbackReturn MoteusController::sort_state_interfaces()
             effort_command_interfaces_.size(), joint_num_);
         return controller_interface::CallbackReturn::ERROR;
     }
+    RCLCPP_INFO(get_node()->get_logger(), "[SUCCESS] MoteusController.sort_state_interfaces()");
 
-    RCLCPP_INFO(get_node()->get_logger(), "State interfaces for MoteusController sorted successfully!");
     return controller_interface::CallbackReturn::SUCCESS;
 }
 
@@ -559,8 +580,7 @@ controller_interface::CallbackReturn MoteusController::sort_command_interfaces()
             effort_command_interfaces_.size(), joint_num_);
         return controller_interface::CallbackReturn::ERROR;
     }
-
-    RCLCPP_INFO(get_node()->get_logger(), "Command interfaces for MoteusController sorted successfully!");
+    RCLCPP_INFO(get_node()->get_logger(), "[SUCCESS] MoteusController.sort_command_interfaces()");
     return controller_interface::CallbackReturn::SUCCESS;
 }
 
