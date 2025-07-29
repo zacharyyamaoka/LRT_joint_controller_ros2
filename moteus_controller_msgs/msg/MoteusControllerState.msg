@@ -18,6 +18,7 @@ float64[] control_velocity
 float64[] feedforward # feedforward torque in Nm
 float64[] kp # dynamic parameter
 float64[] kd # dynamic parameter
+float64[] max_velocity # max velocity in m/s
 float64[] max_torque # max torque in Nm
 
 # Current value of the process (ie: latest sensor measurement on the controlled value).

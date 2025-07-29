@@ -33,9 +33,9 @@ controller_interface::InterfaceConfiguration MoteusController::command_interface
     {
         std::string full_name = joint_name + "/" + params_.command_interface;
         command_interfaces_config.names.push_back(full_name);
-        RCLCPP_INFO(get_node()->get_logger(), "Adding command interface: %s", full_name.c_str());
+        // RCLCPP_INFO(get_node()->get_logger(), "Adding command interface: %s", full_name.c_str());
     }
-    RCLCPP_INFO(get_node()->get_logger(), "[SUCCESS] MoteusController.command_interface_configuration()");
+    // RCLCPP_INFO(get_node()->get_logger(), "[SUCCESS] MoteusController.command_interface_configuration()");
     return command_interfaces_config;
 }
 
@@ -52,9 +52,10 @@ controller_interface::InterfaceConfiguration MoteusController::state_interface_c
         {
             std::string full_name = joint_name + "/" + interface;
             state_interfaces_config.names.push_back(full_name);
-            RCLCPP_INFO(get_node()->get_logger(), "Adding state interface: %s", full_name.c_str());        }
+            // RCLCPP_INFO(get_node()->get_logger(), "Adding state interface: %s", full_name.c_str());
+        }
     }
-    RCLCPP_INFO(get_node()->get_logger(), "[SUCCESS] MoteusController.state_interface_configuration()");
+    // RCLCPP_INFO(get_node()->get_logger(), "[SUCCESS] MoteusController.state_interface_configuration()");
     return state_interfaces_config;
 }
 
@@ -74,6 +75,8 @@ controller_interface::CallbackReturn MoteusController::on_cleanup(
 controller_interface::CallbackReturn MoteusController::on_configure(
       const rclcpp_lifecycle::State & previous_state)
 {
+    RCLCPP_INFO(get_node()->get_logger(), "[START] MoteusController.on_configure()");
+
     /* Creating joint controllers, reference subscriber and buffer for reference messages */
     auto ret = configure_joints();
     if (ret != CallbackReturn::SUCCESS)
@@ -108,6 +111,7 @@ controller_interface::CallbackReturn MoteusController::on_configure(
 controller_interface::CallbackReturn MoteusController::on_activate(
       const rclcpp_lifecycle::State & previous_state)
 {
+    RCLCPP_INFO(get_node()->get_logger(), "[START] MoteusController.on_activate()");
 
     // In sort_state_interfaces and sort_command_interfaces we link the variables to the interfaces
     /* Add all loaned state and command interfaces to sorted vectors */
@@ -196,7 +200,7 @@ controller_interface::return_type MoteusController::update_reference_from_subscr
 controller_interface::return_type MoteusController::update_and_write_commands(
       const rclcpp::Time & time, const rclcpp::Duration & period)
 {
-    /* Get current state and send commands to loaned comannd interfaces */
+    /* Get current state and send commands to loaned command interfaces */
     for(size_t i = 0; i < joint_num_; ++i)
     {
         joint_states_[i].position_ = position_state_interfaces_[i].get().get_value();
@@ -328,6 +332,20 @@ controller_interface::CallbackReturn MoteusController::configure_joints()
             pid_params, pid_frequency);
         
         moteus_controllers_.push_back(moteus_controller);
+
+        RCLCPP_INFO(get_node()->get_logger(), "Joint [%s] Parameters:", params_.joint_names[i].c_str());
+        RCLCPP_INFO(get_node()->get_logger(), "  Position Min:  %.4f", joint_params.position_min_);
+        RCLCPP_INFO(get_node()->get_logger(), "  Position Max:  %.4f", joint_params.position_max_);
+        RCLCPP_INFO(get_node()->get_logger(), "  Position Offset: %.4f", joint_params.position_offset_);
+        RCLCPP_INFO(get_node()->get_logger(), "  Velocity Max:  %.4f", joint_params.velocity_max_);
+        RCLCPP_INFO(get_node()->get_logger(), "  Effort Max:    %.4f", joint_params.effort_max_);
+
+        RCLCPP_INFO(get_node()->get_logger(), "  PID Gains:");
+        RCLCPP_INFO(get_node()->get_logger(), "    P:       %.4f", pid_params.proportional_coef_);
+        RCLCPP_INFO(get_node()->get_logger(), "    I:       %.4f", pid_params.integral_coef_);
+        RCLCPP_INFO(get_node()->get_logger(), "    D:       %.4f", pid_params.derivative_coef_);
+        RCLCPP_INFO(get_node()->get_logger(), "    I-limit: %.4f", pid_params.integration_limit_);
+
     }
     return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -425,8 +443,9 @@ void MoteusController::configure_state_msg(StatePublisher& publisher, const std:
     publisher.msg_.feedforward.resize(dof, std::numeric_limits<double>::quiet_NaN());
     publisher.msg_.kp.resize(dof, std::numeric_limits<double>::quiet_NaN());
     publisher.msg_.kd.resize(dof, std::numeric_limits<double>::quiet_NaN());
+    publisher.msg_.max_velocity.resize(dof, std::numeric_limits<double>::quiet_NaN());
     publisher.msg_.max_torque.resize(dof, std::numeric_limits<double>::quiet_NaN());
-  
+
     // Feedback (measured) values
     publisher.msg_.position.resize(dof, std::numeric_limits<double>::quiet_NaN());
     publisher.msg_.velocity.resize(dof, std::numeric_limits<double>::quiet_NaN());
@@ -465,7 +484,8 @@ void MoteusController::publish_state(
       msg.feedforward[i]      = joint_cmd.feedforward_effort_;
       msg.kp[i]               = joint_cmd.kp_scale_;
       msg.kd[i]               = joint_cmd.kd_scale_;
-    //   msg.max_torque[i]       = joint_cmd.max_torque_; // Not implemented right now
+      msg.max_velocity[i]     =  controllers[i].joint_params_.velocity_max_;
+      msg.max_torque[i]       = controllers[i].joint_params_.effort_max_;
 
       // Reference values used to calc error: ref - control = error
       msg.position[i] = joint_state.position_;
@@ -474,9 +494,10 @@ void MoteusController::publish_state(
 
       // PID internal state: error * kp * kp_static
       msg.p[i]          = controller_state.P;
-      msg.i[i]   = controller_state.I;
+      msg.i[i]          = controller_state.I;
       msg.d[i]          = controller_state.D;
-      msg.command[i]    = controller_state.total_effort;
+      msg.command[i] = controller_state.total_effort;
+ 
 
     }
 
@@ -486,6 +507,8 @@ void MoteusController::publish_state(
 
 controller_interface::CallbackReturn MoteusController::sort_state_interfaces()
 {
+    RCLCPP_INFO(get_node()->get_logger(), "[START] MoteusController.sort_state_interfaces()");
+
     /* Add all loaned state interfaces to internal controller structures */
     if (state_interfaces_.empty())
     {
@@ -527,15 +550,15 @@ controller_interface::CallbackReturn MoteusController::sort_state_interfaces()
     if(position_state_interfaces_.size() != joint_num_)
     {
         RCLCPP_WARN(get_node()->get_logger(),
-            "Size of position state inetrface vector is (%zu), but should be (%zu)",
-            effort_command_interfaces_.size(), joint_num_);
+            "Size of position state interface vector is (%zu), but should be (%zu)",
+            position_state_interfaces_.size(), joint_num_);
         return controller_interface::CallbackReturn::ERROR;
     }
     if(velocity_state_interfaces_.size() != joint_num_)
     {
         RCLCPP_WARN(get_node()->get_logger(),
-            "Size of position state inetrface vector is (%zu), but should be (%zu)",
-            effort_command_interfaces_.size(), joint_num_);
+            "Size of velocity state interface vector is (%zu), but should be (%zu)",
+            velocity_state_interfaces_.size(), joint_num_);
         return controller_interface::CallbackReturn::ERROR;
     }
     RCLCPP_INFO(get_node()->get_logger(), "[SUCCESS] MoteusController.sort_state_interfaces()");
@@ -550,6 +573,9 @@ controller_interface::CallbackReturn MoteusController::sort_command_interfaces()
     {
         return controller_interface::CallbackReturn::ERROR;
     }
+
+    // Log out the type of command interface that is being used
+    RCLCPP_INFO(get_node()->get_logger(), "Using command interface: %s", params_.command_interface.c_str());
 
     for (size_t i = 0; i < joint_num_; ++i)
     {
@@ -576,7 +602,7 @@ controller_interface::CallbackReturn MoteusController::sort_command_interfaces()
     if(effort_command_interfaces_.size() != joint_num_)
     {
         RCLCPP_WARN(get_node()->get_logger(),
-            "Size of effort command inetrface map is (%zu), but should be (%zu)",
+            "Size of effort command interface map is (%zu), but should be (%zu)",
             effort_command_interfaces_.size(), joint_num_);
         return controller_interface::CallbackReturn::ERROR;
     }
