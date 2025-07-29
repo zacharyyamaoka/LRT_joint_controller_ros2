@@ -446,6 +446,7 @@ void MoteusController::configure_state_msg(StatePublisher& publisher, const std:
     publisher.msg_.max_velocity.resize(dof, std::numeric_limits<double>::quiet_NaN());
     publisher.msg_.max_torque.resize(dof, std::numeric_limits<double>::quiet_NaN());
 
+
     // Feedback (measured) values
     publisher.msg_.position.resize(dof, std::numeric_limits<double>::quiet_NaN());
     publisher.msg_.velocity.resize(dof, std::numeric_limits<double>::quiet_NaN());
