@@ -110,10 +110,7 @@ install(TARGETS
 )
 
 install(DIRECTORY 
-  test/urdf
-  test/bringup/launch
-  test/bringup/config
-  test/worlds 
+  test
   DESTINATION share/${PROJECT_NAME}
 )
 

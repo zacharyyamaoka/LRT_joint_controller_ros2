@@ -14,6 +14,8 @@ moteus_controller:
     joint_names:
       - body_1_joint
 
+    command_interface: "effort"  # Can be "effort" or "position"
+
     joint_params:
       body_1_joint: 
         position_max: 3.14

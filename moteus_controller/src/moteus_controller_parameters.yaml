@@ -53,11 +53,12 @@ moteus_controller:
   command_interface: {
     type: string,
     default_value: "effort",
-    description: "Name of the interfaces used by the controller for writing commands to the hardware.",
+    description: "Name of the interfaces used by the controller for writing commands to the hardware.
+                  Effort is default. Position is helpful for testing with Mock HW Interface",
     read_only: true,
     validation: {
       not_empty<>: null,
-      one_of<>: [['effort']],
+      one_of<>: [['effort', 'position']],
     }
   }
   reference_interfaces: {

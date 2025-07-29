@@ -86,6 +86,7 @@ For accurate sim2real:
 - [ros2_control](https://github.com/ros-controls/ros2_control)
 - [ros2_controllers](https://github.com/ros-controls/ros2_controllers)
 - [generate_parameter_library](https://github.com/PickNikRobotics/generate_parameter_library)
+  - This allows you to dynamically update Parameters at runtime which can be helpful for tunning the PID!
 - sensor_msgs
 
 ## Installation
@@ -110,6 +111,7 @@ colcon build --packages-select joint_controller_msgs moteus_controller
 
 ### Controller parameters (example):
 
+**Position control:**
 ```yaml
 ...
 moteus_controller:
@@ -119,6 +121,8 @@ moteus_controller:
   ros__parameters:
     joint_names:
       - body_1_joint
+
+    command_interface: "position"  # Forwards position commands directly
 
     joint_params:
       body_1_joint: 
@@ -153,7 +157,7 @@ moteus_controller:
 
 #### `reference_interfaces` - reference (input) interfaces for user or other controller
 
-#### `command_interface` - :warning: ALWAYS EFFORT, NOTHING ELSE (it is deafult value so user don't have to write it)
+#### `command_interface` - Command interface type. Can be "effort" (default) or "position". When set to "effort", the controller calculates torque using PID control. When set to "position", the controller forwards the commanded position directly to the hardware.
 
 #### `state_interface` - :warning: ALWAYS POSITION AND VELOCITY, NOTHING ELSE (it is deafult value so user don't have to write it)
 

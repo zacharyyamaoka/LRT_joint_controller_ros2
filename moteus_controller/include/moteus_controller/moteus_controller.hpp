@@ -14,12 +14,12 @@
 #include "controller_interface/chainable_controller_interface.hpp"
 #include "controller_interface/controller_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
-#include "realtime_tools/realtime_buffer.h"
-#include "realtime_tools/realtime_publisher.h"
+#include "realtime_tools/realtime_buffer.hpp"
+#include "realtime_tools/realtime_publisher.hpp"
 
 #include "moteus_controller/moteus_controller_core/moteus_controller_core.hpp"
 #include "moteus_controller/visibility_control.hpp"
-#include "moteus_controller_parameters.hpp"
+#include <moteus_controller/moteus_controller_parameters.hpp>
 
 namespace moteus_controller
 {
@@ -143,6 +143,7 @@ namespace moteus_controller
     using loaned_command_interfaces_t = std::vector<std::reference_wrapper<hardware_interface::LoanedCommandInterface>>;
     using loaned_state_interfaces_t = std::vector<std::reference_wrapper<hardware_interface::LoanedStateInterface>>;
     loaned_command_interfaces_t effort_command_interfaces_;
+    loaned_command_interfaces_t position_command_interfaces_;
     loaned_state_interfaces_t position_state_interfaces_;
     loaned_state_interfaces_t velocity_state_interfaces_;
 

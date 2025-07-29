@@ -44,8 +44,6 @@ namespace moteus_controller_core
     {
         private:
 
-        /* Joint parameters */
-        JointParameters joint_params_;
 
         /* Internal PID controller parameters */
         pid_controller::PidController pid_controller_;
@@ -53,6 +51,7 @@ namespace moteus_controller_core
         double _total_effort;
 
         public:
+        JointParameters joint_params_;
 
         MoteusControllerCore(JointParameters _joint_params,
          pid_controller::PidParameters _pid_params, double _frequency);

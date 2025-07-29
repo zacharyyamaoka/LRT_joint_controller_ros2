@@ -1,4 +1,6 @@
 #include "moteus_controller/moteus_controller_core/moteus_controller_core.hpp"
+#include <iostream>   // for std::cout
+#include <iomanip>    // for std::setprecision
 
 using namespace moteus_controller_core;
 
@@ -18,9 +20,19 @@ double MoteusControllerCore::calculateEffort(const JointCommands& _joint_command
     double effort =  pid_controller_.calculateEffort(position_error, velocity_error,
      _joint_command.feedforward_effort_, _joint_command.kp_scale_, _joint_command.kd_scale_);
 
+
+    // std::cout << std::fixed << std::setprecision(4);
+    // std::cout << "[calculateEffort] desired_position: " << desired_position << std::endl;
+    // std::cout << "[calculateEffort] desired_velocity: " << desired_velocity << std::endl;
+    // std::cout << "[calculateEffort] position_error: " << position_error << std::endl;
+    // std::cout << "[calculateEffort] velocity_error: " << velocity_error << std::endl;
+    // std::cout << "[calculateEffort] effort (before clamp): " << effort << std::endl;
+
      effort = std::clamp(effort, -joint_params_.effort_max_, joint_params_.effort_max_);
 
     _total_effort = effort;
+
+    // std::cout << "[calculateEffort] effort (after clamp): " << effort << std::endl;
 
     return effort;
 }
